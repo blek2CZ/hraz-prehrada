@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Pozadí -->
+  <rect width="512" height="512" fill="#0D47A1" rx="96"/>
+
+  <!-- Obloha -->
+  <rect x="0" y="0" width="512" height="280" fill="#1565C0" rx="96"/>
+  <rect x="0" y="250" width="512" height="30" fill="#1565C0"/>
+
+  <!-- Voda -->
+  <rect x="0" y="280" width="512" height="232" fill="#0277BD"/>
+
+  <!-- Vlnka na hladině -->
+  <path d="M0 285 Q64 272 128 285 Q192 298 256 285 Q320 272 384 285 Q448 298 512 285 L512 305 Q448 318 384 305 Q320 292 256 305 Q192 318 128 305 Q64 292 0 305 Z" fill="#29B6F6" opacity="0.6"/>
+
+  <!-- Těleso hráze -->
+  <polygon points="80,420 180,260 332,260 432,420" fill="#1A237E" opacity="0.95"/>
+  <!-- Světlý pás – koruna hráze -->
+  <rect x="160" y="250" width="192" height="18" fill="#3949AB" rx="4"/>
+
+  <!-- Výtok / přepad -->
+  <rect x="244" y="268" width="24" height="80" fill="#0D47A1" rx="4"/>
+  <path d="M244 348 Q256 362 268 348 L280 420 Q256 435 232 420 Z" fill="#0288D1" opacity="0.7"/>
+
+  <!-- Kapka vody – symbol -->
+  <path d="M256 68 C256 68 218 118 218 148 A38 38 0 1 0 294 148 C294 118 256 68 256 68 Z" fill="white" opacity="0.92"/>
+</svg>

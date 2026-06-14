@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0D47A1">
+  <meta name="description" content="Výška vody nad starou hrází – přehrada Křelovina">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hráz">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <title>Hráz Křelovina</title>
+  <style>
+    :root {
+      --bg-top:    #0a2a6e;
+      --bg-bot:    #025d8c;
+      --card-bg:   rgba(255,255,255,0.10);
+      --card-border: rgba(255,255,255,0.20);
+      --blue-btn:  rgba(255,255,255,0.18);
+      --text:      #ffffff;
+      --muted:     rgba(255,255,255,0.65);
+      --input-bg:  rgba(255,255,255,0.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: linear-gradient(160deg, var(--bg-top) 0%, var(--bg-bot) 100%);
+      min-height: 100vh;
+      color: var(--text);
+      padding: 12px 14px 28px;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app { max-width: 480px; margin: 0 auto; }
+
+    /* ── Header ─────────────────────────────── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 0 18px;
+    }
+    header .logo { font-size: 2rem; line-height: 1; }
+    header h1   { font-size: 1.25rem; font-weight: 700; letter-spacing: .3px; }
+    header p    { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+
+    /* ── Cards ───────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      margin-bottom: 14px;
+    }
+    .card-label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Result card ─────────────────────────── */
+    .result-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+    .big-num {
+      font-size: 4rem;
+      font-weight: 800;
+      line-height: 1;
+      transition: color .4s;
+    }
+    .big-num.neg  { color: #90CAF9; }
+    .big-num.low  { color: #A5D6A7; }
+    .big-num.mid  { color: #FFE082; }
+    .big-num.high { color: #FFAB40; }
+    .big-num.crit { color: #EF9A9A; }
+    .big-unit { font-size: 1.5rem; font-weight: 400; color: var(--muted); }
+
+    .sub-hladina { font-size: .88rem; color: var(--muted); margin-top: 6px; }
+
+    /* progress bar */
+    .bar-wrap {
+      margin-top: 12px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 99px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg,#29B6F6,#0288D1);
+      transition: width .7s ease;
+      width: 0%;
+    }
+    .bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: .67rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      font-size: .75rem;
+      color: var(--muted);
+    }
+    .badge {
+      background: rgba(255,255,255,0.15);
+      border-radius: 99px;
+      padding: 2px 8px;
+      font-size: .68rem;
+    }
+
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 3px solid rgba(255,255,255,.25);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner.active { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Input card ──────────────────────────── */
+    label {
+      display: block;
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1.1rem;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    input[type="text"]::placeholder { color: rgba(255,255,255,.35); }
+    input[type="text"]:focus {
+      border-color: rgba(255,255,255,.55);
+      background: rgba(255,255,255,.18);
+    }
+    .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+    button {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      border-radius: 10px;
+      font-size: .88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    button:active { opacity: .78; transform: scale(.98); }
+    .btn-calc   { background: #fff; color: #0a2a6e; }
+    .btn-fetch  { background: var(--blue-btn); color: #fff; border: 1px solid var(--card-border); }
+
+    .error-msg { color: #FFCDD2; font-size: .8rem; margin-top: 8px; min-height: 1rem; }
+
+    /* ── Ref card ────────────────────────────── */
+    .ref-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: .82rem; }
+    .ref-row + .ref-row { border-top: 1px solid rgba(255,255,255,.08); }
+    .ref-label { color: var(--muted); }
+    .ref-val   { font-weight: 600; }
+
+    /* ── PMO link ────────────────────────────── */
+    .pmo-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 13px 14px;
+      margin-top: 14px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      color: #fff;
+      text-decoration: none;
+      font-size: .88rem;
+      font-weight: 500;
+      transition: background .15s;
+    }
+    .pmo-link:active { background: rgba(255,255,255,.18); }
+    .pmo-link .arrow { margin-left: auto; color: var(--muted); }
+
+    /* ── Footer ──────────────────────────────── */
+    footer { text-align: center; font-size: .72rem; color: var(--muted); padding-top: 8px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <span class="logo">💧</span>
+    <div>
+      <h1>Hráz Křelovina</h1>
+      <p>Výška vody nad starou hrází &middot; Hloučela</p>
+    </div>
+  </header>
+
+  <!-- ── Výsledek ──────────────────────────── -->
+  <div class="card">
+    <div class="card-label">Výška nad starou hrází</div>
+    <div class="result-row">
+      <span class="spinner" id="spinner"></span>
+      <span class="big-num" id="big-num">–</span>
+      <span class="big-unit" id="big-unit"></span>
+    </div>
+    <div class="sub-hladina" id="sub-hladina"></div>
+
+    <div class="bar-wrap"><div class="bar-fill" id="bar-fill"></div></div>
+    <div class="bar-labels">
+      <span>stálé nadržení<br>266,38 m</span>
+      <span style="text-align:center">zásobní prostor<br>273,58 m</span>
+      <span style="text-align:right">koruna hráze<br>278,63 m</span>
+    </div>
+
+    <div class="status-row">
+      <span id="update-time">Načítání dat…</span>
+      <span class="badge" id="source-badge"></span>
+    </div>
+  </div>
+
+  <!-- ── Ruční zadání ───────────────────────── -->
+  <div class="card">
+    <div class="card-label">Ruční zadání / Aktualizace</div>
+    <label for="hodnotaMetru">Výška hladiny [m n.m.]:</label>
+    <input type="text" id="hodnotaMetru" placeholder="např. 273,20" inputmode="decimal" autocomplete="off">
+    <div class="btn-row">
+      <button class="btn-calc"  onclick="vypocetRucne()">Vypočítat</button>
+      <button class="btn-fetch" id="btn-fetch" onclick="nacistAutomaticky()">🔄 Načíst z PMO</button>
+    </div>
+    <div class="error-msg" id="error-msg"></div>
+  </div>
+
+  <!-- ── Referenční data ─────────────────────── -->
+  <div class="card">
+    <div class="card-label">Referenční data – přehrada Křelovina</div>
+    <div class="ref-row"><span class="ref-label">Stará hráz (výpočtová báze)</span><span class="ref-val">271,33 m n.m.</span></div>
+    <div class="ref-row"><span class="ref-label">Hladina stálého nadržení</span><span class="ref-val">266,38 m n.m.</span></div>
+    <div class="ref-row"><span class="ref-label">Hladina zásobního prostoru</span><span class="ref-val">273,58 m n.m.</span></div>
+    <div class="ref-row"><span class="ref-label">Kóta přelivu</span><span class="ref-val">276,43 m n.m.</span></div>
+    <div class="ref-row"><span class="ref-label">Max. retenční hladina</span><span class="ref-val">277,58 m n.m.</span></div>
+    <div class="ref-row"><span class="ref-label">Koruna hráze</span><span class="ref-val">278,63 m n.m.</span></div>
+    <div class="ref-row"><span class="ref-label">Výškový systém</span><span class="ref-val">Balt p.v.</span></div>
+
+    <a class="pmo-link"
+       href="https://sap.pmo.cz/portal/Nadrze/cz/pc/Mereni.aspx?id=25&oid=1"
+       target="_blank" rel="noopener noreferrer">
+      🌊 Stránka měření – Povodí Moravy
+      <span class="arrow">→</span>
+    </a>
+  </div>
+
+  <footer>Povodí Moravy, s.p. &middot; přehrada Křelovina &middot; Hloučela</footer>
+</div>
+
+<script>
+  /* ─── Konstanty ─────────────────────────────────────── */
+  const STARA_HRAZ  = 271.33;   // kóta koruny staré hráze [m n.m.]
+  const OFFSET      = 0.50;     // opravný offset (dle původního výpočtu)
+  const SOURCE_URL  = 'https://sap.pmo.cz/portal/Nadrze/cz/text/Mereni.aspx?oid=1&id=25&z=vse';
+  const PROXY       = 'https://api.allorigins.win/get?url=';
+
+  /* ─── Výpočet výšky nad starou hrází [cm] ───────────── */
+  function vypocitat(hladina) {
+    return ((hladina - STARA_HRAZ + OFFSET) * 100);
+  }
+
+  /* ─── Barva výsledku dle výšky ─────────────────────── */
+  function barvaTridy(cm) {
+    if (cm < 0)    return 'neg';
+    if (cm < 50)   return 'low';
+    if (cm < 150)  return 'mid';
+    if (cm < 250)  return 'high';
+    return 'crit';
+  }
+
+  /* ─── Zobrazení výsledku ────────────────────────────── */
+  function zobrazit(hladinaStr, zdroj) {
+    const hladina = parseFloat(String(hladinaStr).replace(',', '.'));
+    if (isNaN(hladina)) return;
+
+    const cm  = vypocitat(hladina);
+    const num = document.getElementById('big-num');
+    const unit = document.getElementById('big-unit');
+
+    num.textContent = Math.round(cm).toString();
+    unit.textContent = ' cm';
+
+    // Barva
+    num.className = 'big-num ' + barvaTridy(cm);
+
+    // Popis hladiny
+    document.getElementById('sub-hladina').textContent =
+      'Aktuální hladina: ' + hladina.toFixed(2).replace('.', ',') + ' m n.m.';
+
+    // Progress bar (266.38 – 278.63)
+    const min = 266.38, max = 278.63;
+    const pct = Math.max(0, Math.min(100, (hladina - min) / (max - min) * 100));
+    document.getElementById('bar-fill').style.width = pct.toFixed(1) + '%';
+
+    // Badge se zdrojem
+    document.getElementById('source-badge').textContent = zdroj;
+  }
+
+  /* ─── Načtení dat z PMO přes CORS proxy ─────────────── */
+  async function nacistAutomaticky() {
+    const spinner   = document.getElementById('spinner');
+    const timeEl    = document.getElementById('update-time');
+    const errorEl   = document.getElementById('error-msg');
+    const btnFetch  = document.getElementById('btn-fetch');
+
+    spinner.classList.add('active');
+    btnFetch.disabled = true;
+    timeEl.textContent = 'Načítání…';
+    errorEl.textContent = '';
+    document.getElementById('big-num').textContent  = '–';
+    document.getElementById('big-unit').textContent = '';
+    document.getElementById('sub-hladina').textContent = '';
+
+    try {
+      const url = PROXY + encodeURIComponent(SOURCE_URL);
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Chyba sítě: HTTP ' + res.status);
+
+      const json = await res.json();
+      const html = json.contents;
+      if (!html) throw new Error('Prázdná odpověď od proxy');
+
+      const parser = new DOMParser();
+      const doc    = parser.parseFromString(html, 'text/html');
+
+      // 1. Pokus – primární element (text verze)
+      let hladina = '';
+      const span = doc.getElementById('ContentPlaceHolder1_DataMereniGV_hladinaLbl_0');
+      if (span && span.textContent.trim()) {
+        hladina = span.textContent.trim();
+      }
+
+      // 2. Fallback – první buňka tabulky ve tvaru "273,20"
+      if (!hladina) {
+        const cells = doc.querySelectorAll('td');
+        for (const td of cells) {
+          const t = td.textContent.trim();
+          if (/^\d{3},\d+$/.test(t)) { hladina = t; break; }
+        }
+      }
+
+      if (!hladina) throw new Error('Hodnota hladiny nenalezena na stránce PMO');
+
+      zobrazit(hladina, 'PMO auto');
+      timeEl.textContent = 'Aktualizováno: ' + new Date().toLocaleTimeString('cs-CZ');
+
+      // Záloha do localStorage
+      localStorage.setItem('hraz_hladina', hladina);
+      localStorage.setItem('hraz_update',  new Date().toISOString());
+
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = '⚠ ' + err.message;
+      timeEl.textContent  = 'Nepodařilo se načíst';
+
+      // Načíst zálohu z localStorage
+      const cached = localStorage.getItem('hraz_hladina');
+      if (cached) {
+        zobrazit(cached, 'záloha');
+        const ts = localStorage.getItem('hraz_update');
+        if (ts) timeEl.textContent = 'Záloha: ' + new Date(ts).toLocaleString('cs-CZ');
+      }
+    } finally {
+      spinner.classList.remove('active');
+      btnFetch.disabled = false;
+    }
+  }
+
+  /* ─── Ruční výpočet ─────────────────────────────────── */
+  function vypocetRucne() {
+    const raw      = document.getElementById('hodnotaMetru').value.trim();
+    const errorEl  = document.getElementById('error-msg');
+
+    if (!raw) { errorEl.textContent = '⚠ Zadejte hodnotu výšky hladiny.'; return; }
+
+    const normalized = raw.replace(',', '.');
+    if (isNaN(parseFloat(normalized)) || !/^[\d.,]+$/.test(raw)) {
+      errorEl.textContent = '⚠ Zadejte platné číslo (např. 273,20).';
+      document.getElementById('hodnotaMetru').value = '';
+      return;
+    }
+
+    errorEl.textContent = '';
+    zobrazit(raw, 'ručně');
+    document.getElementById('update-time').textContent =
+      'Zadáno ručně: ' + new Date().toLocaleTimeString('cs-CZ');
+  }
+
+  /* ─── Enter v inputu ────────────────────────────────── */
+  document.getElementById('hodnotaMetru').addEventListener('keydown', e => {
+    if (e.key === 'Enter') vypocetRucne();
+  });
+
+  /* ─── Service Worker ────────────────────────────────── */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(r  => console.log('[SW] registrován:', r.scope))
+        .catch(e => console.warn('[SW] registrace selhala:', e));
+    });
+  }
+
+  /* ─── Spustit při načtení stránky ──────────────────── */
+  nacistAutomaticky();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Maskable: bezpečná zóna je kruh ~80% = 410px, obsah 205px od středu -->
+  <!-- Celé pozadí -->
+  <rect width="512" height="512" fill="#0D47A1"/>
+
+  <!-- Voda -->
+  <rect x="0" y="280" width="512" height="232" fill="#0277BD"/>
+  <path d="M0 285 Q64 272 128 285 Q192 298 256 285 Q320 272 384 285 Q448 298 512 285 L512 305 Q448 318 384 305 Q320 292 256 305 Q192 318 128 305 Q64 292 0 305 Z" fill="#29B6F6" opacity="0.5"/>
+
+  <!-- Hráz -->
+  <polygon points="100,430 185,268 327,268 412,430" fill="#1A237E" opacity="0.95"/>
+  <rect x="167" y="256" width="178" height="18" fill="#3949AB" rx="4"/>
+
+  <!-- Kapka -->
+  <path d="M256 80 C256 80 222 128 222 156 A34 34 0 1 0 290 156 C290 128 256 80 256 80 Z" fill="white" opacity="0.90"/>
+</svg>
