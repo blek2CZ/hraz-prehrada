@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Výpočet hodnoty</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            max-width: 400px; /* Maximální šířka pro emulaci mobilu */
+            margin-left: auto;
+            margin-right: auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 10px; /* Změna velikosti textu */
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #4CAF50;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        #vysledek {
+            margin-top: 10px;
+            text-align: center;
+        }
+    </style>
+    <script>
+        // Funkce pro načtení hodnoty ze stránky
+        function loadValueFromWebsite() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'https://sap.pmo.cz/portal/Nadrze/cz/pc/Prehled.aspx', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var response = xhr.responseText;
+                    var parser = new DOMParser();
+                    var htmlDoc = parser.parseFromString(response, 'text/html');
+                    var valueElement = htmlDoc.getElementById('ObsahCPH_DataMereniGV_hladinaLbl_21');
+                    var value = valueElement.textContent.trim();
+                    calculateValue(value);
+                }
+            };
+            xhr.send();
+        }
+
+        // Funkce pro výpočet hodnoty
+        function calculateValue(hodnotaMetru) {
+            var stav = 271.33;
+            var vysledek = (parseFloat(hodnotaMetru) - stav + 0.50) * 100;
+            vysledek = vysledek.toFixed(2);
+            document.getElementById("vysledek").innerHTML = "Výsledek: " + vysledek + " cm";
+        }
+        
+        // Funkce pro výpočet hodnoty z manuálně zadané hodnoty
+        function vypocetHodnoty() {
+            var hodnotaMetruRaw = document.getElementById("hodnotaMetru").value;
+            var hodnotaMetru = hodnotaMetruRaw.replace(",", ".");
+            if (isNaN(hodnotaMetru)) {
+                document.getElementById("hodnotaMetru").value = "";
+                document.getElementById("vysledek").innerHTML = "Zadejte platné číslo.";
+                return;
+            }
+            calculateValue(hodnotaMetru);
+        }
+    </script>
+</head>
+<body>
+    <h1>Výpočet hodnoty</h1>
+    <label for="hodnotaMetru">Hodnota v metrech:</label>
+    <input type="text" id="hodnotaMetru" name="hodnotaMetru" placeholder="Zadejte hodnotu v metrech">
+    <button onclick="vypocetHodnoty();">Vypočítat</button>
+    <button onclick="loadValueFromWebsite();">Automaticky načíst</button>
+    <p id="vysledek"></p>
+</body>
+</html>

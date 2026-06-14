@@ -1,0 +1,13 @@
+fetch('https://sap.pmo.cz/portal/Nadrze/cz/text/Mereni.aspx?oid=1&id=25&z=vse')
+  .then(response => response.text())
+  .then(data => {
+    const parser = new DOMParser();
+    const htmlDoc = parser.parseFromString(data, 'text/html');
+    const spanElement = htmlDoc.getElementById('ContentPlaceHolder1_DataMereniGV_hladinaLbl_0');
+    const hodnota = spanElement.textContent;
+    console.log(hodnota); // Vypíše hodnotu '273,08'
+    // Zde můžeš provést další operace s hodnotou
+  })
+  .catch(error => {
+    console.log('Při načítání došlo k chybě:', error);
+  });
