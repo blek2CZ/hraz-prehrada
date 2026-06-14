@@ -1,7 +1,7 @@
 {
-  "name": "Hráz Křelovina – výška hladiny",
-  "short_name": "Hráz",
-  "description": "Výška vody nad starou hrází – přehrada Křelovina, Hloučela (PMO)",
+  "name": "Plumlov – stará hráz",
+  "short_name": "Plumlov",
+  "description": "Výška vody nad starou hrází – přehrada Plumlov (Hloučela, PMO)",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
