@@ -279,7 +279,13 @@
   const STARA_HRAZ  = 271.33;   // kóta koruny staré hráze [m n.m.]
   const OFFSET      = 0.50;     // opravný offset (dle původního výpočtu)
   const SOURCE_URL  = 'https://sap.pmo.cz/portal/Nadrze/cz/text/Mereni.aspx?oid=1&id=25&z=vse';
-  const PROXY       = 'https://api.allorigins.win/get?url=';
+
+  // Záložní CORS proxy – zkouší se postupně, dokud jedna neuspěje
+  const PROXIES = [
+    { url: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,    parse: r => r.json().then(j => j.contents) },
+    { url: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                 parse: r => r.text() },
+    { url: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, parse: r => r.text() },
+  ];
 
   /* ─── Výpočet výšky nad starou hrází [cm] ───────────── */
   function vypocitat(hladina) {
@@ -323,7 +329,24 @@
     document.getElementById('source-badge').textContent = zdroj;
   }
 
-  /* ─── Načtení dat z PMO přes CORS proxy ─────────────── */
+  /* ─── Extrakce hladiny z HTML ───────────────────────── */
+  function parseHladina(html) {
+    const parser = new DOMParser();
+    const doc    = parser.parseFromString(html, 'text/html');
+
+    // 1. Pokus – primární element (text verze)
+    const span = doc.getElementById('ContentPlaceHolder1_DataMereniGV_hladinaLbl_0');
+    if (span && span.textContent.trim()) return span.textContent.trim();
+
+    // 2. Fallback – první buňka tabulky ve tvaru "273,20"
+    for (const td of doc.querySelectorAll('td')) {
+      const t = td.textContent.trim();
+      if (/^\d{3},\d+$/.test(t)) return t;
+    }
+    return null;
+  }
+
+  /* ─── Načtení dat z PMO přes CORS proxy (s fallbacky) ── */
   async function nacistAutomaticky() {
     const spinner   = document.getElementById('spinner');
     const timeEl    = document.getElementById('update-time');
@@ -338,46 +361,32 @@
     document.getElementById('big-unit').textContent = '';
     document.getElementById('sub-hladina').textContent = '';
 
-    try {
-      const url = PROXY + encodeURIComponent(SOURCE_URL);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('Chyba sítě: HTTP ' + res.status);
+    let hladina = null;
+    let lastErr  = '';
 
-      const json = await res.json();
-      const html = json.contents;
-      if (!html) throw new Error('Prázdná odpověď od proxy');
-
-      const parser = new DOMParser();
-      const doc    = parser.parseFromString(html, 'text/html');
-
-      // 1. Pokus – primární element (text verze)
-      let hladina = '';
-      const span = doc.getElementById('ContentPlaceHolder1_DataMereniGV_hladinaLbl_0');
-      if (span && span.textContent.trim()) {
-        hladina = span.textContent.trim();
+    for (const proxy of PROXIES) {
+      try {
+        const res = await fetch(proxy.url(SOURCE_URL), { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const html = await proxy.parse(res);
+        if (!html) throw new Error('Prázdná odpověď');
+        hladina = parseHladina(html);
+        if (hladina) break;
+        throw new Error('Hodnota nenalezena v odpovědi');
+      } catch (e) {
+        lastErr = e.message;
+        console.warn('Proxy selhala:', proxy.url('…'), e.message);
       }
+    }
 
-      // 2. Fallback – první buňka tabulky ve tvaru "273,20"
-      if (!hladina) {
-        const cells = doc.querySelectorAll('td');
-        for (const td of cells) {
-          const t = td.textContent.trim();
-          if (/^\d{3},\d+$/.test(t)) { hladina = t; break; }
-        }
-      }
-
-      if (!hladina) throw new Error('Hodnota hladiny nenalezena na stránce PMO');
-
+    if (hladina) {
       zobrazit(hladina, 'PMO auto');
       timeEl.textContent = 'Aktualizováno: ' + new Date().toLocaleTimeString('cs-CZ');
-
-      // Záloha do localStorage
+      errorEl.textContent = '';
       localStorage.setItem('hraz_hladina', hladina);
       localStorage.setItem('hraz_update',  new Date().toISOString());
-
-    } catch (err) {
-      console.error(err);
-      errorEl.textContent = '⚠ ' + err.message;
+    } else {
+      errorEl.textContent = '⚠ Nepodařilo se načíst: ' + lastErr;
       timeEl.textContent  = 'Nepodařilo se načíst';
 
       // Načíst zálohu z localStorage
@@ -387,10 +396,10 @@
         const ts = localStorage.getItem('hraz_update');
         if (ts) timeEl.textContent = 'Záloha: ' + new Date(ts).toLocaleString('cs-CZ');
       }
-    } finally {
-      spinner.classList.remove('active');
-      btnFetch.disabled = false;
     }
+
+    spinner.classList.remove('active');
+    btnFetch.disabled = false;
   }
 
   /* ─── Ruční výpočet ─────────────────────────────────── */
