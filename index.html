@@ -278,7 +278,7 @@
   /* ─── Konstanty ─────────────────────────────────────── */
   const STARA_HRAZ  = 271.33;   // kóta koruny staré hráze [m n.m.]
   const OFFSET      = 0.50;     // opravný offset (dle původního výpočtu)
-  const SOURCE_URL  = 'https://sap.pmo.cz/portal/Nadrze/cz/text/Mereni.aspx?oid=1&id=25&z=vse';
+  const SOURCE_URL  = 'https://sap.pmo.cz/portal/Nadrze/cz/smartphone/Mereni.aspx?id=25&oid=1';
 
   // Záložní CORS proxy – zkouší se postupně, dokud jedna neuspěje
   const PROXIES = [
@@ -334,14 +334,32 @@
     const parser = new DOMParser();
     const doc    = parser.parseFromString(html, 'text/html');
 
-    // 1. Pokus – primární element (text verze)
+    // 1. Pokus – tabulka s měřeními: hledáme záhlaví "Hladina" a bereme
+    //    2. buňku prvního datového řádku (datum | hladina | odtok | ...)
+    const tables = doc.querySelectorAll('table');
+    for (const table of tables) {
+      const headers = [...table.querySelectorAll('th')].map(th => th.textContent.trim());
+      const hladIdx = headers.findIndex(h => h.toLowerCase().includes('hladina'));
+      if (hladIdx >= 0) {
+        const firstRow = table.querySelector('tbody tr') || table.querySelectorAll('tr')[1];
+        if (firstRow) {
+          const cell = firstRow.querySelectorAll('td')[hladIdx];
+          if (cell) {
+            const val = cell.textContent.trim();
+            if (/^\d{3}[,.]\d+$/.test(val)) return val;
+          }
+        }
+      }
+    }
+
+    // 2. Fallback – span s ID (text verze)
     const span = doc.getElementById('ContentPlaceHolder1_DataMereniGV_hladinaLbl_0');
     if (span && span.textContent.trim()) return span.textContent.trim();
 
-    // 2. Fallback – první buňka tabulky ve tvaru "273,20"
+    // 3. Fallback – první buňka odpovídající vzoru "273,20"
     for (const td of doc.querySelectorAll('td')) {
       const t = td.textContent.trim();
-      if (/^\d{3},\d+$/.test(t)) return t;
+      if (/^\d{3}[,.]\d+$/.test(t)) return t;
     }
     return null;
   }
