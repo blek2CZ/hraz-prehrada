@@ -705,6 +705,15 @@
     updateConditions(currentHladina);
   }
 
+  function resetSettings() {
+    if (!confirm('Smazat uložené podmínky a heslo a obnovit výchozí hodnoty?')) return;
+    localStorage.removeItem('hraz_conditions');
+    localStorage.removeItem('hraz_password');
+    closeSettingsModal();
+    conditionsUnlocked = false;
+    document.getElementById('detail-panel').style.display = 'none';
+  }
+
   /* ─── Enter v modálních inputech ───────────────────── */
   document.getElementById('password-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') checkPassword();
@@ -758,6 +767,7 @@
       <button class="btn-fetch" onclick="closeSettingsModal()">Zrušit</button>
       <button class="btn-calc"  onclick="saveSettings()">Uložit</button>
     </div>
+    <button class="btn-settings" style="margin-top:6px;color:#FFCDD2" onclick="resetSettings()">🗑 Obnovit výchozí hodnoty</button>
   </div>
 </div>
 
