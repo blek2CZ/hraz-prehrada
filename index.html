@@ -204,6 +204,106 @@
 
     /* ── Footer ──────────────────────────────── */
     footer { text-align: center; font-size: .72rem; color: var(--muted); padding-top: 8px; }
+
+    /* ── Tlačítko Více… ─────────────────────────────── */
+    .vic-btn {
+      flex: none;
+      padding: 2px 10px;
+      background: rgba(255,255,255,.13);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 99px;
+      color: #fff;
+      font-size: .72rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .vic-btn:active { background: rgba(255,255,255,.25); }
+
+    /* ── Podmínkové řádky ───────────────────────────── */
+    .podminka-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 11px;
+      border-radius: 10px;
+      margin-bottom: 7px;
+      background: rgba(255,255,255,.07);
+      border: 1px solid transparent;
+      font-size: .82rem;
+      transition: background .4s, border-color .4s;
+    }
+    .podminka-row.ok { background: rgba(76,175,80,.18); border-color: rgba(76,175,80,.42); }
+    .podminka-row.ne { background: rgba(239,83,80,.18); border-color: rgba(239,83,80,.42); }
+    .podminka-name      { flex: 1; font-weight: 500; }
+    .podminka-threshold { color: var(--muted); font-size: .72rem; white-space: nowrap; }
+    .podminka-status    { font-weight: 700; white-space: nowrap; margin-left: 2px; min-width: 38px; text-align: right; }
+    .podminka-row.ok .podminka-status { color: #A5D6A7; }
+    .podminka-row.ne .podminka-status { color: #EF9A9A; }
+
+    .btn-settings {
+      width: 100%;
+      margin-top: 4px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.16);
+      border-radius: 10px;
+      color: var(--muted);
+      font-size: .78rem;
+      padding: 8px 14px;
+    }
+
+    /* ── Modaly ─────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      padding: 20px;
+    }
+    .modal-box {
+      background: linear-gradient(160deg,#0d3a7a 0%,#0a5c8c 100%);
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 18px;
+      padding: 24px 20px 18px;
+      width: 100%;
+      max-width: 360px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    .modal-section-title {
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-top: 6px;
+      margin-bottom: -2px;
+    }
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1.05rem;
+      outline: none;
+      transition: border-color .15s, background .15s;
+    }
+    input[type="password"]::placeholder { color: rgba(255,255,255,.35); }
+    input[type="password"]:focus {
+      border-color: rgba(255,255,255,.55);
+      background: rgba(255,255,255,.18);
+    }
+    .modal-error { color: #FFCDD2; font-size: .8rem; min-height: 1rem; }
   </style>
 </head>
 <body>
@@ -237,7 +337,29 @@
     <div class="status-row">
       <span id="update-time">Načítání dat…</span>
       <span class="badge" id="source-badge"></span>
+      <button class="vic-btn" onclick="showViceModal()">Více…</button>
     </div>
+  </div>
+
+  <!-- ── Detail: podmínky pro brodění / rybaření ─────── -->
+  <div id="detail-panel" class="card" style="display:none">
+    <div class="card-label">Podmínky – brodění &amp; rybaření</div>
+    <div id="podminka-0" class="podminka-row">
+      <span class="podminka-name">–</span>
+      <span class="podminka-threshold"></span>
+      <span class="podminka-status"></span>
+    </div>
+    <div id="podminka-1" class="podminka-row">
+      <span class="podminka-name">–</span>
+      <span class="podminka-threshold"></span>
+      <span class="podminka-status"></span>
+    </div>
+    <div id="podminka-2" class="podminka-row">
+      <span class="podminka-name">–</span>
+      <span class="podminka-threshold"></span>
+      <span class="podminka-status"></span>
+    </div>
+    <button class="btn-settings" onclick="showSettingsModal()">⚙ Nastavení hodnot a hesla</button>
   </div>
 
   <!-- ── Ruční zadání ───────────────────────── -->
@@ -287,6 +409,17 @@
     { url: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, parse: r => r.text() },
   ];
 
+  /* ─── Stav podmínek ─────────────────────────────────── */
+  let currentHladina   = null;
+  let conditionsUnlocked = false;
+
+  const DEFAULT_PASSWORD   = 'ryby';
+  const DEFAULT_CONDITIONS = [
+    { name: 'První část hráze',  threshold: 272.35 },
+    { name: 'Druhá část hráze',  threshold: 272.50 },
+    { name: 'Třetí část hráze',  threshold: 272.70 },
+  ];
+
   /* ─── Výpočet výšky nad starou hrází [cm] ───────────── */
   function vypocitat(hladina) {
     return ((hladina - STARA_HRAZ + OFFSET) * 100);
@@ -327,6 +460,10 @@
 
     // Badge se zdrojem
     document.getElementById('source-badge').textContent = zdroj;
+
+    // Aktualizovat podmínkové řádky
+    currentHladina = hladina;
+    updateConditions(hladina);
   }
 
   /* ─── Extrakce hladiny z HTML ───────────────────────── */
@@ -454,8 +591,175 @@
     });
   }
 
+  /* ─── Podmínky: pomocné funkce ────────────────────── */
+  function loadConditions() {
+    try {
+      const c = localStorage.getItem('hraz_conditions');
+      return c ? JSON.parse(c) : DEFAULT_CONDITIONS.map(x => ({ ...x }));
+    } catch { return DEFAULT_CONDITIONS.map(x => ({ ...x })); }
+  }
+
+  function getPassword() {
+    return localStorage.getItem('hraz_password') || DEFAULT_PASSWORD;
+  }
+
+  function updateConditions(hladina) {
+    if (!conditionsUnlocked) return;
+    const conds = loadConditions();
+    for (let i = 0; i < 3; i++) {
+      const row    = document.getElementById('podminka-' + i);
+      const cond   = conds[i];
+      row.querySelector('.podminka-name').textContent      = cond.name;
+      row.querySelector('.podminka-threshold').textContent = '≤\u202f' + String(cond.threshold).replace('.', ',') + '\u202fm\u202fn.m.';
+      const statusEl = row.querySelector('.podminka-status');
+      if (hladina === null) {
+        row.className = 'podminka-row';
+        statusEl.textContent = '?';
+      } else if (hladina <= cond.threshold) {
+        row.className = 'podminka-row ok';
+        statusEl.textContent = '✓ OK';
+      } else {
+        row.className = 'podminka-row ne';
+        statusEl.textContent = '✗ NE';
+      }
+    }
+  }
+
+  /* ─── Modal: heslo ──────────────────────────────────── */
+  function showViceModal() {
+    const panel = document.getElementById('detail-panel');
+    if (conditionsUnlocked) {
+      panel.style.display = panel.style.display === 'none' ? '' : 'none';
+      return;
+    }
+    document.getElementById('password-input').value = '';
+    document.getElementById('modal-pw-error').textContent = '';
+    document.getElementById('modal-password').style.display = 'flex';
+    setTimeout(() => document.getElementById('password-input').focus(), 80);
+  }
+
+  function closePasswordModal() {
+    document.getElementById('modal-password').style.display = 'none';
+  }
+
+  function checkPassword() {
+    const entered = document.getElementById('password-input').value;
+    if (entered === getPassword()) {
+      conditionsUnlocked = true;
+      closePasswordModal();
+      const panel = document.getElementById('detail-panel');
+      panel.style.display = '';
+      updateConditions(currentHladina);
+    } else {
+      const errEl = document.getElementById('modal-pw-error');
+      errEl.textContent = '⚠ Nesprávné heslo';
+      document.getElementById('password-input').value = '';
+      document.getElementById('password-input').focus();
+    }
+  }
+
+  /* ─── Modal: nastavení ──────────────────────────────── */
+  function showSettingsModal() {
+    const conds = loadConditions();
+    document.getElementById('new-password').value     = '';
+    document.getElementById('confirm-password').value = '';
+    for (let i = 0; i < 3; i++) {
+      document.getElementById('thresh-name-' + i).value = conds[i].name;
+      document.getElementById('thresh-' + i).value      = String(conds[i].threshold).replace('.', ',');
+    }
+    document.getElementById('settings-error').textContent = '';
+    document.getElementById('modal-settings').style.display = 'flex';
+  }
+
+  function closeSettingsModal() {
+    document.getElementById('modal-settings').style.display = 'none';
+  }
+
+  function saveSettings() {
+    const errEl      = document.getElementById('settings-error');
+    const newPwd     = document.getElementById('new-password').value;
+    const confirmPwd = document.getElementById('confirm-password').value;
+
+    if (newPwd && newPwd !== confirmPwd) {
+      errEl.textContent = '⚠ Hesla se neshodují';
+      return;
+    }
+
+    const conds = loadConditions();
+    for (let i = 0; i < 3; i++) {
+      const name = document.getElementById('thresh-name-' + i).value.trim() || DEFAULT_CONDITIONS[i].name;
+      const raw  = document.getElementById('thresh-' + i).value.trim().replace(',', '.');
+      const val  = parseFloat(raw);
+      if (isNaN(val) || val < 260 || val > 285) {
+        errEl.textContent = `⚠ Neplatná hodnota v řádku ${i + 1} (očekávám číslo 260–285)`;
+        return;
+      }
+      conds[i].name      = name;
+      conds[i].threshold = val;
+    }
+
+    localStorage.setItem('hraz_conditions', JSON.stringify(conds));
+    if (newPwd) localStorage.setItem('hraz_password', newPwd);
+
+    closeSettingsModal();
+    updateConditions(currentHladina);
+  }
+
+  /* ─── Enter v modálních inputech ───────────────────── */
+  document.getElementById('password-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') checkPassword();
+  });
+
   /* ─── Spustit při načtení stránky ──────────────────── */
   nacistAutomaticky();
 </script>
+
+<!-- ── Modal: zadání hesla ───────────────────────────── -->
+<div id="modal-password" class="modal-overlay" style="display:none" onclick="if(event.target===this)closePasswordModal()">
+  <div class="modal-box">
+    <div class="modal-title">🔒 Zadejte heslo</div>
+    <input type="password" id="password-input" placeholder="Heslo" autocomplete="current-password">
+    <div class="modal-error" id="modal-pw-error"></div>
+    <div class="btn-row">
+      <button class="btn-fetch" onclick="closePasswordModal()">Zrušit</button>
+      <button class="btn-calc"  onclick="checkPassword()">Potvrdit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: nastavení ──────────────────────────────── -->
+<div id="modal-settings" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSettingsModal()">
+  <div class="modal-box">
+    <div class="modal-title">⚙ Nastavení</div>
+
+    <div class="modal-section-title">Změna hesla</div>
+    <input type="password" id="new-password"     placeholder="Nové heslo (prázdné = nezměnit)" autocomplete="new-password">
+    <input type="password" id="confirm-password" placeholder="Potvrdit nové heslo"              autocomplete="new-password">
+
+    <div class="modal-section-title">Mezní hladiny pro brodění [m n.m.]</div>
+
+    <label for="thresh-name-0">Název – první část:</label>
+    <input type="text" id="thresh-name-0" placeholder="První část hráze" autocomplete="off">
+    <label for="thresh-0">Maximální hladina [m n.m.]:</label>
+    <input type="text" id="thresh-0" inputmode="decimal" placeholder="např. 272,35" autocomplete="off">
+
+    <label for="thresh-name-1">Název – druhá část:</label>
+    <input type="text" id="thresh-name-1" placeholder="Druhá část hráze" autocomplete="off">
+    <label for="thresh-1">Maximální hladina [m n.m.]:</label>
+    <input type="text" id="thresh-1" inputmode="decimal" placeholder="např. 272,50" autocomplete="off">
+
+    <label for="thresh-name-2">Název – třetí část:</label>
+    <input type="text" id="thresh-name-2" placeholder="Třetí část hráze" autocomplete="off">
+    <label for="thresh-2">Maximální hladina [m n.m.]:</label>
+    <input type="text" id="thresh-2" inputmode="decimal" placeholder="např. 272,70" autocomplete="off">
+
+    <div class="modal-error" id="settings-error"></div>
+    <div class="btn-row">
+      <button class="btn-fetch" onclick="closeSettingsModal()">Zrušit</button>
+      <button class="btn-calc"  onclick="saveSettings()">Uložit</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
