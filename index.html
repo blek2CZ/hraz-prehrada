@@ -715,12 +715,13 @@
   }
 
   /* ─── Enter v modálních inputech ───────────────────── */
-  document.getElementById('password-input').addEventListener('keydown', e => {
-    if (e.key === 'Enter') checkPassword();
-  });
-
   /* ─── Spustit při načtení stránky ──────────────────── */
-  nacistAutomaticky();
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('password-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') checkPassword();
+    });
+    nacistAutomaticky();
+  });
 </script>
 
 <!-- ── Modal: zadání hesla ───────────────────────────── -->
