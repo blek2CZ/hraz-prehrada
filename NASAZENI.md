@@ -33,3 +33,5 @@ GitHub Pages se aktualizují automaticky do ~1 minuty.
 `výška [cm] = (hladina [m n.m.] − 271,33 + 0,50) × 100`
 
 Data se načítají z: https://sap.pmo.cz/portal/Nadrze/cz/pc/Mereni.aspx?id=25&oid=1
+
+## Hodnoty první lampa 272,11
