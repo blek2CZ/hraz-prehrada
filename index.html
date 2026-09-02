@@ -406,9 +406,9 @@
 
   // Záložní CORS proxy – zkouší se postupně, dokud jedna neuspěje
   const PROXIES = [
-    { url: u => `https://api.allorigins.win/get?url=${encodeURIComponent(u)}`,    parse: r => r.json().then(j => j.contents) },
-    { url: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                 parse: r => r.text() },
-    { url: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`, parse: r => r.text() },
+    { url: u => `https://proxy.cors.sh/${u}`,                                        parse: r => r.text() },
+    { url: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,       parse: r => r.text() },
+    { url: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                    parse: r => r.text() },
   ];
 
   /* ─── Stav podmínek ─────────────────────────────────── */
