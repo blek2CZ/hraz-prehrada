@@ -1,5 +1,5 @@
 /* ─── Hráz Křelovina – Service Worker ─── */
-const CACHE_NAME = 'hraz-v3';
+const CACHE_NAME = 'hraz-v4';
 const APP_SHELL  = [
   './',
   './index.html',
