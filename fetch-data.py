@@ -24,14 +24,16 @@ except Exception as exc:
     print(f"Chyba při načítání URL: {exc}", file=sys.stderr)
     sys.exit(1)
 
-# Hledáme číslo ve tvaru 27x,xx nebo 27x.xx (hladina přehrady Plumlov ≈ 266–278)
-matches = re.findall(r"\b(2[5-9]\d[,\.]\d+)\b", html)
+# Cílit přímo na span id="hladinaLbl" (aktuální měření), ne na referenční hodnoty výše v HTML
 hladina = None
-for m in matches:
-    val = float(m.replace(",", "."))
-    if 255.0 <= val <= 290.0:
-        hladina = m
-        break
+for pattern in (r'<span[^>]*id="hladinaLbl"[^>]*>([\d,\.]+)</span>',
+                r'<span[^>]*id="hodnotaLbl"[^>]*>([\d,\.]+)</span>'):
+    m = re.search(pattern, html)
+    if m:
+        val = float(m.group(1).replace(",", "."))
+        if 255.0 <= val <= 290.0:
+            hladina = m.group(1)
+            break
 
 if not hladina:
     print("Hodnota hladiny nenalezena v odpovědi.", file=sys.stderr)
