@@ -542,6 +542,7 @@
       if (!d.hladina || !isValidHladina(d.hladina)) throw new Error('Neplatná hodnota');
       const ts     = new Date(d.updated);
       const ageMin = Math.round((Date.now() - ts.getTime()) / 60000);
+      if (ageMin > 300) throw new Error('Data stará ' + ageMin + ' min');
       hladina  = d.hladina;
       zdrojStr = ageMin < 60 ? 'PMO (' + ageMin + ' min)' : 'PMO (' + Math.round(ageMin / 60) + ' hod)';
       timeStr  = 'PMO: ' + ts.toLocaleString('cs-CZ');
