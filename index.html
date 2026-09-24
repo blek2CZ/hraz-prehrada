@@ -540,11 +540,10 @@
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const d = await res.json();
       if (!d.hladina || !isValidHladina(d.hladina)) throw new Error('Neplatná hodnota');
-      const ts    = new Date(d.updated);
-      const ageMs = Date.now() - ts.getTime();
-      if (ageMs > 90 * 60 * 1000) throw new Error('Data stará ' + Math.round(ageMs / 60000) + ' min');
+      const ts     = new Date(d.updated);
+      const ageMin = Math.round((Date.now() - ts.getTime()) / 60000);
       hladina  = d.hladina;
-      zdrojStr = 'PMO (' + Math.round(ageMs / 60000) + ' min)';
+      zdrojStr = ageMin < 60 ? 'PMO (' + ageMin + ' min)' : 'PMO (' + Math.round(ageMin / 60) + ' hod)';
       timeStr  = 'PMO: ' + ts.toLocaleString('cs-CZ');
     } catch (e) {
       lastErr = e.message;
