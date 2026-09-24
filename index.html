@@ -503,6 +503,12 @@
     return null;
   }
 
+  /* ─── Ověření, že jde o reálnou hladinu přehrady Plumlov ─── */
+  function isValidHladina(val) {
+    const n = parseFloat(String(val).replace(',', '.'));
+    return !isNaN(n) && n >= 255 && n <= 290;
+  }
+
   /* ─── Načtení dat z PMO přes CORS proxy (s fallbacky) ── */
   async function nacistAutomaticky() {
     const spinner   = document.getElementById('spinner');
@@ -528,7 +534,8 @@
         const html = await proxy.parse(res);
         if (!html) throw new Error('Prázdná odpověď');
         hladina = parseHladina(html);
-        if (hladina) break;
+        if (hladina && isValidHladina(hladina)) break;
+        if (hladina) throw new Error('Hodnota mimo očekávaný rozsah: ' + hladina);
         throw new Error('Hodnota nenalezena v odpovědi');
       } catch (e) {
         lastErr = e.message;
@@ -543,15 +550,21 @@
       localStorage.setItem('hraz_hladina', hladina);
       localStorage.setItem('hraz_update',  new Date().toISOString());
     } else {
-      errorEl.textContent = '⚠ Nepodařilo se načíst: ' + lastErr;
-      timeEl.textContent  = 'Nepodařilo se načíst';
-
       // Načíst zálohu z localStorage
       const cached = localStorage.getItem('hraz_hladina');
       if (cached) {
         zobrazit(cached, 'záloha');
         const ts = localStorage.getItem('hraz_update');
-        if (ts) timeEl.textContent = 'Záloha: ' + new Date(ts).toLocaleString('cs-CZ');
+        const tsStr = ts ? new Date(ts).toLocaleString('cs-CZ') : '?';
+        timeEl.textContent  = '⚠ Záloha z: ' + tsStr;
+        errorEl.textContent = '⚠ Nepodařilo se načíst živá data (' + lastErr + '). Zobrazena záloha.';
+        document.getElementById('sub-hladina').textContent +=
+          ' – ZÁLOHA, data nemusí být aktuální';
+      } else {
+        timeEl.textContent  = '⚠ Data nedostupná';
+        errorEl.textContent = '⚠ Nepodařilo se načíst: ' + lastErr;
+        document.getElementById('big-num').textContent  = '?';
+        document.getElementById('sub-hladina').textContent = 'Zkontrolujte připojení nebo zadejte ručně.';
       }
     }
 
