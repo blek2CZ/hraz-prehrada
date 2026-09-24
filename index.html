@@ -321,7 +321,7 @@
 
   <!-- ── Výsledek ──────────────────────────── -->
   <div class="card">
-    <div class="card-label">Výška nad starou hrází</div>
+    <div class="card-label" id="result-label">Výška nad starou hrází</div>
     <div class="result-row">
       <span class="spinner" id="spinner"></span>
       <span class="big-num" id="big-num">–</span>
@@ -445,11 +445,16 @@
     const num = document.getElementById('big-num');
     const unit = document.getElementById('big-unit');
 
-    num.textContent = Math.round(cm).toString();
+    const absCm = Math.abs(Math.round(cm));
+    num.textContent = absCm.toString();
     unit.textContent = ' cm';
 
     // Barva
     num.className = 'big-num ' + barvaTridy(cm);
+
+    // Label podle směru
+    document.getElementById('result-label').textContent =
+      cm >= 0 ? 'Výška nad starou hrází' : 'Stará hráz nad vodní hladinou';
 
     // Popis hladiny
     document.getElementById('sub-hladina').textContent =
