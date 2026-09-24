@@ -1,5 +1,5 @@
 /* ─── Hráz Křelovina – Service Worker ─── */
-const CACHE_NAME = 'hraz-v4';
+const CACHE_NAME = 'hraz-v5';
 const APP_SHELL  = [
   './',
   './index.html',
@@ -34,8 +34,9 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  /* CORS proxy a PMO požadavky jdou vždy přes síť */
-  if (url.hostname.includes('allorigins') || url.hostname.includes('corsproxy') ||
+  /* CORS proxy, PMO a data.json jdou vždy přes síť */
+  if (url.pathname.endsWith('data.json') ||
+      url.hostname.includes('allorigins') || url.hostname.includes('corsproxy') ||
       url.hostname.includes('codetabs') || url.hostname.includes('pmo.cz')) {
     event.respondWith(
       fetch(event.request).catch(() =>

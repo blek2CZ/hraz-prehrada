@@ -404,11 +404,11 @@
   const OFFSET      = 0.50;     // opravný offset (dle původního výpočtu)
   const SOURCE_URL  = 'https://sap.pmo.cz/portal/Nadrze/cz/smartphone/Mereni.aspx?id=25&oid=1';
 
-  // Záložní CORS proxy – zkouší se postupně, dokud jedna neuspěje
+  // Záložní CORS proxy – zkouší se postupně, pokud selže data.json
   const PROXIES = [
-    { url: u => `https://proxy.cors.sh/${u}`,                                        parse: r => r.text() },
     { url: u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,       parse: r => r.text() },
     { url: u => `https://corsproxy.io/?${encodeURIComponent(u)}`,                    parse: r => r.text() },
+    { url: u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,  parse: r => r.text() },
   ];
 
   /* ─── Stav podmínek ─────────────────────────────────── */
@@ -524,28 +524,50 @@
     document.getElementById('big-unit').textContent = '';
     document.getElementById('sub-hladina').textContent = '';
 
-    let hladina = null;
+    let hladina  = null;
     let lastErr  = '';
+    let zdrojStr = 'PMO auto';
+    let timeStr  = 'Aktualizováno: ' + new Date().toLocaleTimeString('cs-CZ');
 
-    for (const proxy of PROXIES) {
-      try {
-        const res = await fetch(proxy.url(SOURCE_URL), { signal: AbortSignal.timeout(8000) });
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const html = await proxy.parse(res);
-        if (!html) throw new Error('Prázdná odpověď');
-        hladina = parseHladina(html);
-        if (hladina && isValidHladina(hladina)) break;
-        if (hladina) throw new Error('Hodnota mimo očekávaný rozsah: ' + hladina);
-        throw new Error('Hodnota nenalezena v odpovědi');
-      } catch (e) {
-        lastErr = e.message;
-        console.warn('Proxy selhala:', proxy.url('…'), e.message);
+    // 1. data.json z GitHub Actions (primární zdroj, bez CORS)
+    try {
+      const res = await fetch('data.json', { cache: 'no-cache', signal: AbortSignal.timeout(5000) });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const d = await res.json();
+      if (!d.hladina || !isValidHladina(d.hladina)) throw new Error('Neplatná hodnota');
+      const ts    = new Date(d.updated);
+      const ageMs = Date.now() - ts.getTime();
+      if (ageMs > 90 * 60 * 1000) throw new Error('Data stará ' + Math.round(ageMs / 60000) + ' min');
+      hladina  = d.hladina;
+      zdrojStr = 'PMO (' + Math.round(ageMs / 60000) + ' min)';
+      timeStr  = 'PMO: ' + ts.toLocaleString('cs-CZ');
+    } catch (e) {
+      lastErr = e.message;
+      console.warn('data.json selhal:', e.message);
+    }
+
+    // 2. Záložní CORS proxy
+    if (!hladina) {
+      for (const proxy of PROXIES) {
+        try {
+          const res = await fetch(proxy.url(SOURCE_URL), { signal: AbortSignal.timeout(8000) });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const html = await proxy.parse(res);
+          if (!html) throw new Error('Prázdná odpověď');
+          hladina = parseHladina(html);
+          if (hladina && isValidHladina(hladina)) break;
+          if (hladina) throw new Error('Hodnota mimo očekávaný rozsah: ' + hladina);
+          throw new Error('Hodnota nenalezena v odpovědi');
+        } catch (e) {
+          lastErr = e.message;
+          console.warn('Proxy selhala:', proxy.url('…'), e.message);
+        }
       }
     }
 
     if (hladina) {
-      zobrazit(hladina, 'PMO auto');
-      timeEl.textContent = 'Aktualizováno: ' + new Date().toLocaleTimeString('cs-CZ');
+      zobrazit(hladina, zdrojStr);
+      timeEl.textContent = timeStr;
       errorEl.textContent = '';
       localStorage.setItem('hraz_hladina', hladina);
       localStorage.setItem('hraz_update',  new Date().toISOString());

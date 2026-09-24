@@ -1,0 +1,26 @@
+name: Aktualizace dat PMO
+
+on:
+  schedule:
+    - cron: '5,35 * * * *'   # každých 30 minut
+  workflow_dispatch:           # manuální spuštění
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Načíst hladinu z PMO
+        run: python fetch-data.py
+
+      - name: Uložit data do repozitáře
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --staged --quiet || git commit -m "data: hladina $(date -u +'%H:%M UTC')"
+          git push
